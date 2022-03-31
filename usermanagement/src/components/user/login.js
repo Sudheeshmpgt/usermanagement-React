@@ -1,12 +1,14 @@
-import React,{useState} from 'react'
+import React,{useContext, useState} from 'react'
 import {Avatar, Button, Grid, Paper, TextField, Typography, Link} from '@mui/material'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import axios from 'axios'
 import {useNavigate} from 'react-router-dom'
+import { UserContext } from '../../store/usercontext';
 
 const Login=()=>{
 
     const navigate=useNavigate()
+    const {setLoginUserDetails}=useContext(UserContext)
     const [user,setUser]=useState({
         email:'',
         password:'',
@@ -26,6 +28,8 @@ const Login=()=>{
             axios.post("http://localhost:9000/route/login",user)
             .then((res)=>{
                 alert(res.data.message)
+                setLoginUserDetails(res.data.user)
+                navigate('/dashboard')
             })
         }else{
             alert("Invalid credentials")

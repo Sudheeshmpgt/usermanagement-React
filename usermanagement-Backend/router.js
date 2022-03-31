@@ -2,16 +2,11 @@ const { request, response } = require("express");
 var express = require("express");
 var router = express.Router();
 const Register = require("./models/userRegister");
-// const Admin = require("./models/adminRegister")
+const Admin = require("./models/adminRegister")
 const bcrypt = require('bcryptjs');
 
 
 //User Registration
-
-// router.get('/register', (req, res) => {
-//     res.render('registration')
-
-// })
 
 router.post('/register', async (req, res) => {
     try {
@@ -28,14 +23,12 @@ router.post('/register', async (req, res) => {
                     password: hashedPw
                 })
                 const user = await registerUser.save()
+                res.send({message:"User Registered Successfully",user:user})
         }
     }catch (error) {
         res.send(error)
     }
 })
-// res.status(201).render('login', { newuser: "New Account Created Successfully" });
-// res.render('registration', { user: "Password does not match" })
-// res.render('registration', { err: "Email already exists" })
 
 
 //User Login
@@ -47,20 +40,18 @@ router.post('/login', async (req, res) => {
 
         if (user){
             if(isMatch){
-            // req.session.user = req.body.email;
-            // req.session.username = user.name;
-            // res.status(200).redirect('/route/dashboard');
+            req.session.user = req.body.email;
+            req.session.username = user.name;
             res.send({message:"Login Successfull",user:user})
             }else{
                 res.send({message:"Invalid login details"})
             }
         }
         else {
-            res.render('login', { user: "Inavid login details" });
+            res.send({ message: "User not registered" });
         }
     } catch (error) {
-        //  res.status(400).render('login', { user: "Please Enter Email and Password" });
-        res.send({message:"User not registered"})
+        res.send({message:"Invalid Credentials"})
     }
 
 })
@@ -88,40 +79,37 @@ router.post('/login', async (req, res) => {
 
 
 // //Admin route
-// router.post('/admin', async (req, res) => {
-//     try {
+router.post('/admin', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+       
+        if (email != '' || password != '') {
+            const admin = await Admin.findOne({ email: email })
+            if (admin && (password == admin.password)) {
+                req.session.admin = req.body.email;
+                res.send({message:"Login Successfull",admin:admin})
+            }
+            else {
+                res.send({message: "Inavalid Admin details" });
+            }
+        } else {
+            res.send({message:"Please Enter Email and Password"});
+        }
 
-//         const { email, password } = req.body;
-//         if (email != '' || password != '') {
-//             const admin = await Admin.findOne({ email: email })
+    } catch (err) {
+        res.send("Bad Request");
+    }
+})
 
-//             if (admin && password == admin.password) {
-//                 req.session.admin = req.body.email;
-//                 res.status(200).redirect('/route/adminDashboard');
-//             }
-//             else {
-//                 res.render('adminlogin', { user: "Inavalid Admin details" });
-//             }
-//         } else {
-//             res.render('adminlogin', { user: "Please Enter Email and Password" });
-//         }
-
-//     } catch (err) {
-//         res.status(400).send("Bad Request");
-//     }
-// })
-
-// router.get('/adminDashboard', async (req, res) => {
-//     if (req.session.admin) {
-//         const data = await Register.find({})
-
-//         var size = data.length;
-
-//         res.render('adminDashboard', { user: data });
-//     } else {
-//         res.send('Unauthorize User');
-//     }
-// })
+router.get('/adminDashboard', async (req, res) => {
+   
+        const user = await Register.find({})
+    if (user) {
+        res.send({ message:"Request successfull", user: user });
+    } else {
+        res.send('Unauthorize User');
+    }
+})
 
 // router.get('/logouts', (req, res) => {
 //     req.session.destroy((err) => {
@@ -149,72 +137,67 @@ router.post('/login', async (req, res) => {
 //     }
 // })
 
-// //User Update Request
-// router.get('/update/:id', async (req, res) => {
-//     const data = await Register.find({ _id: req.params.id })
+//User Update Request
+router.get('/:id', async (req, res) => {
+    const data = await Register.find({ _id: req.params.id })
 
-//     if (data) {
-//         res.render('update', { user: data })
-//     } else {
-//         res.send("Error")
-//     }
-// })
+    if (data) {
+        res.send({message:"Successful", data: data })
+    } else {
+        res.send({message:"Error"})
+    }
+})
 
-// //User Updation
+//User Updation
 // router.put('/:id', async (req, res) => {
 //     try {
 //         const data = await Register.findByIdAndUpdate({ _id: req.params.id }, req.body)
-//         console.log(req.body)
 //         if (data) {
-//             res.redirect('/route/adminDashboard')
+//             res.send({message:"Request successfull",data})
 //         } else {
-//             res.send("Error")
+//             res.send({message:"Request failed"})
 //         }
 //     } catch (error) {
-//         res.status(400).send("User details not found");
+//         // res.status(400).send("User details not found");
+//         res.send({message:"Bad request"})
 //     }
 
 // })
 
 // //Add new user
-// router.get('/adduser', (req, res) => {
-//     res.render('adduser')
-// })
+router.post('/add', async (req, res) => {
+    try {
+        const {name,phone,email,password}=req.body
+        //console.log(req.body)
+        const user = await Register.findOne({ email: email })
+        if(user){
+            res.send({ message: "User Already Exists" });
+        } else {
+            const hashedPw = await bcrypt.hash(password, 12);
 
-// router.post('/addnew', async (req, res) => {
-//     try {
-//         const email = req.body.email;
-//         const data = await Register.find({ email: email });
-//         if (email == data) {
-//             res.render('adduser', { err: "User Already Exists" });
-//         } else {
-//             const password = req.body.password;
-//             const hashedPw = await bcrypt.hash(password, 12);
-
-//             await Register.insertMany({
-//                 name: req.body.name,
-//                 phone: req.body.phone,
-//                 email: req.body.email,
-//                 password: hashedPw
-//             })
-//             res.redirect('/route/adminDashboard');
-//         }
-
-//     } catch (error) {
-//             res.render('adduser', { err: "User Already Exists"});
-//     }
-// })
+            const data = await Register.insertMany({
+                name:name,
+                phone:phone,
+                email:email,
+                password: hashedPw
+            })
+            res.send({message:"New User Created Successfully",data:data});
+        }
+    } catch (error) {
+            res.send({ message:"Bad Request"});
+    }
+})
 
 
-// //uer Delete
-// router.delete('/:id', (req, res) => {
-//     Register.findByIdAndDelete({ _id: req.params.id }, (err, data) => {
-//         if (err) {
-//             res.send("Some error in deleting the data")
-//         } else {
-//             res.redirect('/route/adminDashboard')
-//         }
-//     })
-// })
+//uer Delete
+router.delete('/:id', (req, res) => {
+    Register.findByIdAndDelete({ _id: req.params.id }, (err, data) => {
+        if (err) {
+            res.send({message:"Some error in deleting the data"})
+        } else {
+            res.send({message:"User Deleted Successfully"})
+        }
+    })
+})
 
-module.exports = router;
+module.exports = router

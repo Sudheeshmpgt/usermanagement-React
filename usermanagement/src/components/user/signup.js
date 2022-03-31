@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { Button, Grid, Paper, TextField} from '@mui/material'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom'
 
 const Signup=()=>{
-
+const navigate=useNavigate()
 const [user,setUser]=useState({
     name:'',
     phone:'',
@@ -25,7 +26,8 @@ const register=()=>{
     if(name && phone && email && password && (password===confirmPassword)){
         axios.post("http://localhost:9000/route/register",user)
         .then((res)=>{
-            console.log(res)
+            alert(res.data.message)
+            navigate('/')
         })
     }else{
         alert("Invalid Credetials")
